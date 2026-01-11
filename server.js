@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { neon } from '@netlify/neon';
+import { neon } from '@neondatabase/serverless';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -65,7 +65,7 @@ app.post('/api/create-message', async (req, res) => {
     try {
         const { content, type = 'text', title, artist } = req.body;
         if (!content) return res.status(400).json({ error: "Content is required" });
-        
+
         await sql`INSERT INTO messages (content, type, title, artist) VALUES (${content}, ${type}, ${title}, ${artist})`;
         res.json({ success: true });
     } catch (error) {
