@@ -9,7 +9,13 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const sql = neon(process.env.DATABASE_URL);
+
+// Database connection check
+if (!process.env.DATABASE_URL) {
+    console.error("FATAL ERROR: DATABASE_URL is not set in environment variables!");
+}
+
+const sql = neon(process.env.DATABASE_URL || '');
 
 // ESM fix for __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +25,14 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Higher limit for Base64 assets
 app.use(express.static('Public'));
 
-// --- API ROUTES ---
+// --- DEBUG & HEALTH ---
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        database_configured: !!process.env.DATABASE_URL,
+        db_url_prefix: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 15) + '...' : 'none'
+    });
+});
 
 // Get Profile
 app.get('/api/get-profile', async (req, res) => {
