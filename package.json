@@ -1,6 +1,7 @@
 {
     "name": "darkside-pro",
     "version": "1.0.0",
+    "type": "module",
     "description": "Unlimited Personal Site on Render",
     "main": "server.js",
     "scripts": {
