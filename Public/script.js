@@ -300,8 +300,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const artist = artistNameInput.value.trim() || 'Unknown Artist';
 
         if (file) {
-            if (file.size > 10 * 1024 * 1024) { // Increased to 10MB as theoretical limit, though Netlify is 6MB
-                alert('File is too large. Please keep it under 6MB for Netlify.');
+            if (file.size > 4.5 * 1024 * 1024) {
+                alert('الملف كبير جداً. Vercel بتسمح بحد أقصى 4.5 ميجا بايت للملف الواحد. حاول ترفعه مضغوط أو رفعه على Drive وحط اللينك.');
                 return;
             }
             const base64 = await toBase64(file);
