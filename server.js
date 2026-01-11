@@ -24,7 +24,12 @@ app.use(express.static('Public'));
 // Get Profile
 app.get('/api/get-profile', async (req, res) => {
     try {
-        const settings = await sql`SELECT * FROM settings WHERE id = 1`;
+        let settings = await sql`SELECT * FROM settings WHERE id = 1`;
+        if (settings.length === 0) {
+            // Auto-create if missing (e.g., new database or deleted row)
+            await sql`INSERT INTO settings (id, name, bio) VALUES (1, 'Ahmed Gamal', 'Welcome to my space') ON CONFLICT (id) DO NOTHING`;
+            settings = await sql`SELECT * FROM settings WHERE id = 1`;
+        }
         res.json(settings[0] || {});
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -35,13 +40,21 @@ app.get('/api/get-profile', async (req, res) => {
 app.post('/api/update-profile', async (req, res) => {
     try {
         const { name, bio, avatar, cover } = req.body;
+
+        // Ensure row exists first (Upsert pattern)
+        await sql`
+            INSERT INTO settings (id, name, bio) 
+            VALUES (1, 'Ahmed Gamal', 'Welcome')
+            ON CONFLICT (id) DO NOTHING
+        `;
+
         await sql`
             UPDATE settings 
             SET 
-                name = COALESCE(${name || null}, name),
-                bio = COALESCE(${bio || null}, bio),
-                avatar = COALESCE(${avatar || null}, avatar),
-                cover = COALESCE(${cover || null}, cover)
+                name = COALESCE(${name === undefined ? null : name}, name),
+                bio = COALESCE(${bio === undefined ? null : bio}, bio),
+                avatar = COALESCE(${avatar === undefined ? null : avatar}, avatar),
+                cover = COALESCE(${cover === undefined ? null : cover}, cover)
             WHERE id = 1
         `;
         res.json({ success: true });
