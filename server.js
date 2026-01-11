@@ -13,8 +13,10 @@ const port = process.env.PORT || 3000;
 // Database connection setup
 let sql = null;
 try {
-    const dbUrl = process.env.DATABASE_URL;
+    let dbUrl = process.env.DATABASE_URL;
     if (dbUrl) {
+        // Strip accidental single or double quotes
+        dbUrl = dbUrl.replace(/['"]/g, '').trim();
         sql = neon(dbUrl);
     } else {
         console.error("CRITICAL: DATABASE_URL is missing!");
