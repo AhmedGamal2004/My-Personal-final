@@ -11,11 +11,16 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Database connection setup
-const dbUrl = process.env.DATABASE_URL;
-const sql = dbUrl ? neon(dbUrl) : null;
-
-if (!dbUrl) {
-    console.error("CRITICAL: DATABASE_URL is missing!");
+let sql = null;
+try {
+    const dbUrl = process.env.DATABASE_URL;
+    if (dbUrl) {
+        sql = neon(dbUrl);
+    } else {
+        console.error("CRITICAL: DATABASE_URL is missing!");
+    }
+} catch (error) {
+    console.error("CRITICAL: Failed to initialize database connection:", error.message);
 }
 
 // ESM fix for __dirname
