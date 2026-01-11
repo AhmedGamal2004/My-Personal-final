@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ahmed Gamal - Personal Website</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+    <div class="container">
+        <!-- Profile Section -->
+        <header class="profile-section">
+            <div class="cover-image" id="cover-display">
+                <button class="edit-btn cover-edit-btn" onclick="document.getElementById('cover-upload').click()">📷
+                    Edit Cover</button>
+                <input type="file" id="cover-upload" hidden accept="image/*">
+            </div>
+            <div class="profile-info">
+                <div class="avatar-container">
+                    <div class="avatar-placeholder" id="avatar-display">AG</div>
+                    <img id="avatar-img" src="" alt="Profile" style="display: none;">
+                    <button class="edit-btn avatar-edit-btn"
+                        onclick="document.getElementById('avatar-upload').click()">📷</button>
+                    <input type="file" id="avatar-upload" hidden accept="image/*">
+                </div>
+                <h1 class="name">Ahmed Gamal</h1>
+                <p class="bio" contenteditable="true">Video Editor | Content Creator</p>
+                <div class="social-links">
+                    <!-- Add social icons later if needed -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs-nav">
+            <button class="tab-btn" data-tab="audio-posts">Audio</button>
+            <button class="tab-btn active" data-tab="text-posts">Messages</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content-area">
+
+            <!-- Text Posts Section -->
+            <section id="text-posts" class="tab-content active">
+                <div class="input-card">
+                    <h3>Leave a message</h3>
+                    <textarea id="message-input" placeholder="Write something..."></textarea>
+                    <button id="send-btn">Post</button>
+                </div>
+
+                <div id="posts-feed" class="feed">
+                    <!-- Sample Post -->
+                    <div class="post-card">
+                        <p class="post-text">Welcome to my personal space!</p>
+                        <span class="post-date">Just now</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Audio Upload Section -->
+            <section id="audio-posts" class="tab-content">
+                <div class="input-card">
+                    <h3>Upload Audio</h3>
+                    <div class="audio-meta-inputs">
+                        <input type="text" id="song-name-input" placeholder="Song Name">
+                        <input type="text" id="artist-name-input" placeholder="Artist Name">
+                    </div>
+                    <div class="file-upload-wrapper">
+                        <input type="file" id="audio-input" accept="audio/*">
+                        <label for="audio-input" class="file-upload-label">
+                            <span>Choose Audio File</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="audio-feed" class="feed">
+                    <!-- Audio items will be appended here -->
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            <p>&copy; 2024 Ahmed Gamal</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>
