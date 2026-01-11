@@ -10,12 +10,13 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Database connection check
-if (!process.env.DATABASE_URL) {
-    console.error("FATAL ERROR: DATABASE_URL is not set in environment variables!");
-}
+// Database connection setup
+const dbUrl = process.env.DATABASE_URL;
+const sql = dbUrl ? neon(dbUrl) : null;
 
-const sql = neon(process.env.DATABASE_URL || '');
+if (!dbUrl) {
+    console.error("CRITICAL: DATABASE_URL is missing!");
+}
 
 // ESM fix for __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +38,7 @@ app.get('/api/health', (req, res) => {
 // Get Profile
 app.get('/api/get-profile', async (req, res) => {
     try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         let settings = await sql`SELECT * FROM settings WHERE id = 1`;
         if (settings.length === 0) {
             // Auto-create if missing (e.g., new database or deleted row)
@@ -52,6 +54,7 @@ app.get('/api/get-profile', async (req, res) => {
 // Update Profile
 app.post('/api/update-profile', async (req, res) => {
     try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { name, bio, avatar, cover } = req.body;
 
         // Ensure row exists first (Upsert pattern)
@@ -79,6 +82,7 @@ app.post('/api/update-profile', async (req, res) => {
 // Get Messages
 app.get('/api/get-messages', async (req, res) => {
     try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const messages = await sql`SELECT * FROM messages ORDER BY created_at DESC`;
         res.json(messages);
     } catch (error) {
@@ -89,6 +93,7 @@ app.get('/api/get-messages', async (req, res) => {
 // Create Message
 app.post('/api/create-message', async (req, res) => {
     try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { content, type = 'text', title, artist } = req.body;
         if (!content) return res.status(400).json({ error: "Content is required" });
 
@@ -102,6 +107,7 @@ app.post('/api/create-message', async (req, res) => {
 // Update Message
 app.post('/api/update-message', async (req, res) => {
     try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { id, content, title, artist } = req.body;
         if (!id) return res.status(400).json({ error: "ID is required" });
 
@@ -121,6 +127,7 @@ app.post('/api/update-message', async (req, res) => {
 // Delete Message
 app.post('/api/delete-message', async (req, res) => {
     try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { id } = req.body;
         if (!id) return res.status(400).json({ error: "ID is required" });
         await sql`DELETE FROM messages WHERE id = ${id}`;
