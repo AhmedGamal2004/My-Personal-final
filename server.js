@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Higher limit for Base64 assets
-app.use(express.static('public'));
+app.use(express.static('Public'));
 
 // --- API ROUTES ---
 
@@ -106,9 +106,11 @@ app.post('/api/delete-message', async (req, res) => {
 
 // Serve frontend
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'Public', 'index.html'));
 });
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
+
+export default app;
