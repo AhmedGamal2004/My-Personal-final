@@ -296,20 +296,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     audioInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
+        if (!file) return;
+
         const title = songNameInput.value.trim() || file.name.replace(/\.[^/.]+$/, "");
         const artist = artistNameInput.value.trim() || 'Unknown Artist';
 
-        if (file) {
-            if (file.size > 4.5 * 1024 * 1024) {
-                alert('الملف كبير جداً. Vercel بتسمح بحد أقصى 4.5 ميجا بايت للملف الواحد. حاول ترفعه مضغوط أو رفعه على Drive وحط اللينك.');
-                return;
+        // Vercel hard limit is 4.5MB. 
+        // Using binary transfer (RAW body) means we don't have Base64 overhead.
+        // So we can support files up to ~4.4MB safely.
+        const vlimit = 4.4 * 1024 * 1024;
+        if (file.size > vlimit) {
+            alert('عذراً، الملف مازال كبيراً جداً (أكبر من 4.4 ميجا). حاول تضغط الملف أو ترفع ملف أصغر قليلاً ليناسب حدود Vercel.');
+            return;
+        }
+
+        try {
+            // Send as RAW binary to avoid Base64 overhead in request body
+            const response = await fetch(`/api/upload-audio?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/octet-stream' },
+                body: file
+            });
+
+            if (response.ok) {
+                audioInput.value = '';
+                songNameInput.value = '';
+                artistNameInput.value = '';
+                fetchMessages();
+            } else {
+                const err = await response.json();
+                alert('فشل الرفع: ' + (err.error || 'خطأ غير معروف'));
             }
-            const base64 = await toBase64(file);
-            audioInput.value = '';
-            songNameInput.value = '';
-            artistNameInput.value = '';
-            await saveMessage(base64, 'audio', title, artist);
-            fetchMessages();
+        } catch (error) {
+            console.error('Error uploading audio:', error);
+            alert('حدث خطأ أثناء الرفع.');
         }
     });
 
@@ -339,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="ctrl-btn play-pause-btn">▶</button>
                 <button class="ctrl-btn next-btn">⏭</button>
             </div>
-            <audio class="hidden-player" src="${base64}"></audio>
+            <audio class="hidden-player" src="/api/audio/${id}"></audio>
         `;
 
         const actionsDiv = audioDiv.querySelector('.card-actions');

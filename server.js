@@ -90,10 +90,64 @@ app.post('/api/update-profile', async (req, res) => {
 app.get('/api/get-messages', async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured on server" });
-        const messages = await sql`SELECT * FROM messages ORDER BY created_at DESC`;
+        // optimization: Don't return full audio content in the list to keep payload small
+        const messages = await sql`
+            SELECT id, type, title, artist, created_at,
+                   CASE WHEN type = 'audio' THEN 'REFER_TO_BINARY_ROUTE' ELSE content END as content
+            FROM messages 
+            ORDER BY created_at DESC
+        `;
         res.json(messages);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Binary Audio Upload (Avoids Base64 overhead in request)
+app.post('/api/upload-audio', express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
+    try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
+
+        const { title, artist } = req.query;
+        const binaryData = req.body; // Buffer from express.raw()
+
+        if (!binaryData || binaryData.length === 0) {
+            return res.status(400).json({ error: "No audio data received" });
+        }
+
+        // Convert to Base64 *only* for DB storage (Prefix included for compatibility)
+        const base64 = `data:audio/mpeg;base64,${binaryData.toString('base64')}`;
+
+        await sql`INSERT INTO messages (content, type, title, artist) VALUES (${base64}, 'audio', ${title || 'Untitled'}, ${artist || 'Unknown Artist'})`;
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Upload error:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Binary Audio Download (Avoids Base64 overhead in response)
+app.get('/api/audio/:id', async (req, res) => {
+    try {
+        if (!sql) return res.status(500).json({ error: "Database not configured on server" });
+
+        const { id } = req.params;
+        const row = await sql`SELECT content FROM messages WHERE id = ${id} AND type = 'audio'`;
+
+        if (row.length === 0) return res.status(404).send("Not found");
+
+        const base64Data = row[0].content;
+        // Strip prefix if exists (e.g., data:audio/mpeg;base64,)
+        const base64String = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+
+        const buffer = Buffer.from(base64String, 'base64');
+
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Content-Length', buffer.length);
+        res.send(buffer);
+    } catch (error) {
+        res.status(500).send(error.message);
     }
 });
 
