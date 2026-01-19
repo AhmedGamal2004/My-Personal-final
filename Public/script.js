@@ -302,11 +302,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const artist = artistNameInput.value.trim() || 'Unknown Artist';
 
         // Vercel hard limit is 4.5MB. 
-        // Using binary transfer (RAW body) means we don't have Base64 overhead.
-        // So we can support files up to ~4.4MB safely.
-        const vlimit = 4.4 * 1024 * 1024;
+        const vlimit = 4.5 * 1024 * 1024;
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
         if (file.size > vlimit) {
-            alert('عذراً، الملف مازال كبيراً جداً (أكبر من 4.4 ميجا). حاول تضغط الملف أو ترفع ملف أصغر قليلاً ليناسب حدود Vercel.');
+            alert(`عذراً، الملف حجمه (${fileSizeMB} ميجا) وهو أكبر من الحد المسموح لـ Vercel (4.5 ميجا). حاول ترفع ملف أصغر قليلاً.`);
             return;
         }
 
