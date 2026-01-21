@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         postDiv.innerHTML = `
-            <p class="post-text">${escapeHtml(text)}</p>
+            <p class="post-text">${linkify(escapeHtml(text))}</p>
             <div class="post-meta">
                 <span class="post-date">${timeString}</span>
                 <div class="post-actions"></div>
@@ -443,5 +443,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function linkify(text) {
+        const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+        return text.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer" class="post-link">$1</a>');
     }
 });
