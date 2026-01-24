@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Messaging & Audio
-    async function fetchMessages() {
+    async function fetchMessages(shouldScroll = false) {
         try {
             const response = await fetch('/api/get-messages');
             const messages = await response.json();
@@ -124,6 +124,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
+            if (shouldScroll) {
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
         } catch (error) {
             console.error('Error fetching messages:', error);
         }
@@ -134,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return;
         messageInput.value = '';
         await saveMessage(text, 'text');
-        fetchMessages();
+        fetchMessages(true); // fetchMessages now scrolls to bottom
     });
 
     messageInput.addEventListener('keydown', (e) => {
@@ -322,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 audioInput.value = '';
                 songNameInput.value = '';
                 artistNameInput.value = '';
-                fetchMessages();
+                fetchMessages(true);
             } else {
                 const err = await response.json();
                 alert('فشل الرفع: ' + (err.error || 'خطأ غير معروف'));

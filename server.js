@@ -95,7 +95,7 @@ app.get('/api/get-messages', async (req, res) => {
             SELECT id, type, title, artist, created_at,
                    CASE WHEN type = 'audio' THEN 'REFER_TO_BINARY_ROUTE' ELSE content END as content
             FROM messages 
-            ORDER BY created_at DESC
+            ORDER BY created_at ASC
         `;
         res.json(messages);
     } catch (error) {
