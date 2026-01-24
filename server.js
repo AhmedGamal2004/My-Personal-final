@@ -25,6 +25,18 @@ try {
     console.error("CRITICAL: Failed to initialize database connection:", error.message);
 }
 
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ahmed123';
+
+// Middleware to check admin password
+const isAdmin = (req, res, next) => {
+    const providedPassword = req.headers['x-admin-password'];
+    if (providedPassword === ADMIN_PASSWORD) {
+        next();
+    } else {
+        res.status(403).json({ error: "Unauthorized: Admin access required" });
+    }
+};
+
 // ESM fix for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +52,15 @@ app.get('/api/health', (req, res) => {
         database_configured: !!process.env.DATABASE_URL,
         db_url_prefix: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 15) + '...' : 'none'
     });
+});
+
+app.post('/api/verify-admin', (req, res) => {
+    const { password } = req.body;
+    if (password === ADMIN_PASSWORD) {
+        res.json({ success: true });
+    } else {
+        res.status(401).json({ error: "Invalid password" });
+    }
 });
 
 // Get Profile
@@ -59,7 +80,7 @@ app.get('/api/get-profile', async (req, res) => {
 });
 
 // Update Profile
-app.post('/api/update-profile', async (req, res) => {
+app.post('/api/update-profile', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { name, bio, avatar, cover } = req.body;
@@ -104,7 +125,7 @@ app.get('/api/get-messages', async (req, res) => {
 });
 
 // Binary Audio Upload (Avoids Base64 overhead in request)
-app.post('/api/upload-audio', express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
+app.post('/api/upload-audio', isAdmin, express.raw({ type: '*/*', limit: '10mb' }), async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured on server" });
 
@@ -152,7 +173,7 @@ app.get('/api/audio/:id', async (req, res) => {
 });
 
 // Create Message
-app.post('/api/create-message', async (req, res) => {
+app.post('/api/create-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { content, type = 'text', title, artist } = req.body;
@@ -166,7 +187,7 @@ app.post('/api/create-message', async (req, res) => {
 });
 
 // Update Message
-app.post('/api/update-message', async (req, res) => {
+app.post('/api/update-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { id, content, title, artist } = req.body;
@@ -186,7 +207,7 @@ app.post('/api/update-message', async (req, res) => {
 });
 
 // Delete Message
-app.post('/api/delete-message', async (req, res) => {
+app.post('/api/delete-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured on server" });
         const { id } = req.body;

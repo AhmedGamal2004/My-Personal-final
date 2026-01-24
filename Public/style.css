@@ -205,6 +205,8 @@ body {
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-lg);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+    /* Hidden by default, shown for admin */
 }
 
 .input-card h3 {
@@ -358,7 +360,8 @@ button#send-btn:hover {
 }
 
 .post-actions {
-    display: flex;
+    display: none;
+    /* Hidden by default */
     gap: 8px;
     opacity: 0.8;
     /* Higher default visibility for mobile */
@@ -538,6 +541,8 @@ button#send-btn:hover {
     top: 10px;
     right: 10px;
     z-index: 2;
+    display: none;
+    /* Hidden by default */
 }
 
 audio.hidden-player {

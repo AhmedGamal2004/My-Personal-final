@@ -14,12 +14,82 @@ document.addEventListener('DOMContentLoaded', () => {
     const songNameInput = document.getElementById('song-name-input');
     const artistNameInput = document.getElementById('artist-name-input');
     const audioFeed = document.getElementById('audio-feed');
+    const footerLink = document.querySelector('footer p');
+
+    let adminPassword = localStorage.getItem('adminPassword') || null;
+    let isAdminMode = false;
 
     // --- Persistence Logic ---
 
+    checkAdminStatus();
     fetchProfile();
     fetchMessages();
 
+    async function checkAdminStatus() {
+        if (!adminPassword) {
+            setAdminUI(false);
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/verify-admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: adminPassword })
+            });
+
+            if (response.ok) {
+                isAdminMode = true;
+                setAdminUI(true);
+            } else {
+                localStorage.removeItem('adminPassword');
+                adminPassword = null;
+                setAdminUI(false);
+            }
+        } catch (error) {
+            setAdminUI(false);
+        }
+    }
+
+    function setAdminUI(isAdmin) {
+        isAdminMode = isAdmin;
+
+        // Hide/Show Input Cards
+        document.querySelectorAll('.input-card').forEach(card => {
+            card.style.display = isAdmin ? 'block' : 'none';
+        });
+
+        // Toggle contenteditable on profile
+        nameEl.setAttribute('contenteditable', isAdmin ? 'true' : 'false');
+        bioEl.setAttribute('contenteditable', isAdmin ? 'true' : 'false');
+
+        // Toggle edit/delete buttons (will be handled in displayPost/displayAudio too)
+        document.querySelectorAll('.post-actions, .card-actions').forEach(el => {
+            el.style.display = isAdmin ? 'flex' : 'none';
+        });
+    }
+
+    footerLink.style.cursor = 'pointer';
+    footerLink.addEventListener('click', async () => {
+        const pass = prompt('Enter Admin Password:');
+        if (!pass) return;
+
+        const response = await fetch('/api/verify-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pass })
+        });
+
+        if (response.ok) {
+            adminPassword = pass;
+            localStorage.setItem('adminPassword', pass);
+            checkAdminStatus();
+            alert('Admin Mode Enabled!');
+            fetchMessages(); // Refresh to show edit buttons
+        } else {
+            alert('Invalid Password');
+        }
+    });
 
     async function fetchProfile() {
         try {
@@ -42,7 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await fetch('/api/update-profile', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-password': adminPassword
+                },
                 body: JSON.stringify(fields)
             });
         } catch (error) {
@@ -151,7 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/create-message', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-password': adminPassword
+                },
                 body: JSON.stringify({ content, type, title, artist })
             });
         } catch (error) {
@@ -168,7 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const response = await fetch('/api/update-message', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-password': adminPassword
+                },
                 body: JSON.stringify(data)
             });
             if (response.ok) {
@@ -184,7 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/delete-message', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-password': adminPassword
+                },
                 body: JSON.stringify({ id })
             });
             if (response.ok) fetchMessages();
@@ -286,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <p class="post-text">${linkify(escapeHtml(text))}</p>
             <div class="post-meta">
                 <span class="post-date">${timeString}</span>
-                <div class="post-actions"></div>
+                <div class="post-actions" style="display: ${isAdminMode ? 'flex' : 'none'}"></div>
             </div>
         `;
 
@@ -317,7 +399,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Send as RAW binary to avoid Base64 overhead in request body
             const response = await fetch(`/api/upload-audio?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/octet-stream' },
+                headers: {
+                    'Content-Type': 'application/octet-stream',
+                    'x-admin-password': adminPassword
+                },
                 body: file
             });
 
@@ -343,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         audioDiv.innerHTML = `
-            <div class="card-actions"></div>
+            <div class="card-actions" style="display: ${isAdminMode ? 'flex' : 'none'}"></div>
             <div class="audio-info">
                 <span class="audio-title">${escapeHtml(title || 'Untitled')}</span>
                 <span class="audio-artist">${escapeHtml(artist || 'Unknown Artist')}</span>
