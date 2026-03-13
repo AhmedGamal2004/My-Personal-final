@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('message-input');
     const postsFeed = document.getElementById('posts-feed');
     const audioInput = document.getElementById('audio-input');
+    const artworkInput = document.getElementById('artwork-input');
+    const artworkPreview = document.getElementById('artwork-preview');
+    const artworkPreviewImg = document.getElementById('artwork-preview-img');
+    const musicLinkInput = document.getElementById('music-link-input'); // NEW
+    const addMusicBtn = document.getElementById('add-music-btn'); // NEW
+    const loadingIndicator = document.getElementById('loadingIndicator'); // NEW
     const songNameInput = document.getElementById('song-name-input');
     const artistNameInput = document.getElementById('artist-name-input');
     const audioFeed = document.getElementById('audio-feed');
@@ -163,6 +169,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    artworkInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 1 * 1024 * 1024) {
+                alert('Image is too large. Please keep it under 1MB.');
+                artworkInput.value = '';
+                return;
+            }
+            const base64 = await toBase64(file);
+            artworkPreviewImg.src = base64;
+            artworkPreview.style.display = 'block';
+        } else {
+            artworkPreview.style.display = 'none';
+        }
+    });
+
     // Navigation
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
@@ -191,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 messages.forEach(msg => {
                     if (msg.type === 'audio') {
-                        displayAudio(msg.id, msg.content, msg.title, msg.artist, msg.created_at);
+                        displayAudio(msg.id, msg.content, msg.title, msg.artist, msg.created_at, msg.cover_image);
                     } else {
                         displayPost(msg.id, msg.content, msg.created_at);
                     }
@@ -379,59 +401,95 @@ document.addEventListener('DOMContentLoaded', () => {
         postsFeed.appendChild(postDiv);
     }
 
-    audioInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+    addMusicBtn.addEventListener('click', async () => {
+        const file = audioInput.files[0];
 
-        const title = songNameInput.value.trim() || file.name.replace(/\.[^/.]+$/, "");
-        const artist = artistNameInput.value.trim() || 'Unknown Artist';
-
-        // Vercel hard limit is 4.5MB. 
-        const vlimit = 4.5 * 1024 * 1024;
-        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-
-        if (file.size > vlimit) {
-            alert(`عذراً، الملف حجمه (${fileSizeMB} ميجا) وهو أكبر من الحد المسموح لـ Vercel (4.5 ميجا). حاول ترفع ملف أصغر قليلاً.`);
+        if (!file) {
+            alert('أرجوك ارفع ملف صوتي الأول.');
             return;
         }
 
-        try {
-            // Send as RAW binary to avoid Base64 overhead in request body
-            const response = await fetch(`/api/upload-audio?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/octet-stream',
-                    'x-admin-password': adminPassword
-                },
-                body: file
-            });
+        // --- Logic: Handle Direct File Upload ---
+        if (file) {
+            const title = songNameInput.value.trim() || file.name.replace(/\.[^/.]+$/, "");
+            const artist = artistNameInput.value.trim() || 'Unknown Artist';
+            const artworkFile = artworkInput.files[0];
+            let artworkBase64 = '';
 
-            if (response.ok) {
-                audioInput.value = '';
-                songNameInput.value = '';
-                artistNameInput.value = '';
-                fetchMessages(true);
-            } else {
-                const err = await response.json();
-                alert('فشل الرفع: ' + (err.error || 'خطأ غير معروف'));
+            if (artworkFile) {
+                artworkBase64 = await toBase64(artworkFile);
             }
-        } catch (error) {
-            console.error('Error uploading audio:', error);
-            alert('حدث خطأ أثناء الرفع.');
+
+            // Vercel hard limit is 4.5MB. 
+            const vlimit = 4.5 * 1024 * 1024;
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+
+            if (file.size > vlimit) {
+                alert(`عذراً، الملف حجمه (${fileSizeMB} ميجا) وهو أكبر من الحد المسموح لـ Vercel (4.5 ميجا). حاول ترفع ملف أصغر قليلاً.`);
+                return;
+            }
+
+            loadingIndicator.innerText = "جاري رفع الملف... ثواني ⏳";
+            loadingIndicator.style.display = 'block';
+            addMusicBtn.disabled = true;
+
+            try {
+                // Since we need to send metadata + image + audio, we use a single JSON request
+                const audioBase64 = await toBase64(file);
+                
+                const response = await fetch('/api/create-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-password': adminPassword
+                    },
+                    body: JSON.stringify({
+                        content: audioBase64,
+                        type: 'audio',
+                        title,
+                        artist,
+                        cover_image: artworkBase64
+                    })
+                });
+
+                if (response.ok) {
+                    audioInput.value = '';
+                    artworkInput.value = '';
+                    artworkPreview.style.display = 'none';
+                    songNameInput.value = '';
+                    artistNameInput.value = '';
+                    fetchMessages(true);
+                } else {
+                    const err = await response.json();
+                    alert('فشل الرفع: ' + (err.error || 'خطأ غير معروف'));
+                }
+            } catch (error) {
+                console.error('Error uploading audio:', error);
+                alert('حدث خطأ أثناء الرفع.');
+            } finally {
+                loadingIndicator.style.display = 'none';
+                addMusicBtn.disabled = false;
+                loadingIndicator.innerText = "عاملين بنزل الأغنية من اللينك... ثواني ⏳"; // Reset msg
+            }
         }
     });
 
-    function displayAudio(id, base64, title, artist, timestamp) {
+    function displayAudio(id, base64, title, artist, timestamp, coverImage) {
         const audioDiv = document.createElement('div');
         audioDiv.className = 'audio-card';
         const date = new Date(timestamp);
         const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+        const coverHtml = coverImage ? `<img src="${coverImage}" class="audio-cover">` : '<div class="audio-cover-placeholder">♪</div>';
+
         audioDiv.innerHTML = `
             <div class="card-actions" style="display: ${isAdminMode ? 'flex' : 'none'}"></div>
-            <div class="audio-info">
-                <span class="audio-title">${escapeHtml(title || 'Untitled')}</span>
-                <span class="audio-artist">${escapeHtml(artist || 'Unknown Artist')}</span>
+            <div class="audio-header">
+                ${coverHtml}
+                <div class="audio-info">
+                    <span class="audio-title">${escapeHtml(title || 'Untitled')}</span>
+                    <span class="audio-artist">${escapeHtml(artist || 'Unknown Artist')}</span>
+                </div>
             </div>
             <div class="audio-controls-container">
                 <div class="audio-progress-bar">

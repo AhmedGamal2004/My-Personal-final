@@ -73,11 +73,27 @@
                         <input type="text" id="song-name-input" placeholder="Song Name">
                         <input type="text" id="artist-name-input" placeholder="Artist Name">
                     </div>
+                    <div class="file-upload-wrapper" style="margin-bottom: 15px;">
+                        <input type="file" id="artwork-input" accept="image/*" style="display: none;">
+                        <label for="artwork-input" class="file-upload-label" style="background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                            <span>Choose Artwork (Optional)</span>
+                        </label>
+                        <div id="artwork-preview" style="display: none; margin-top: 10px; text-align: center;">
+                            <img id="artwork-preview-img" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                        </div>
+                    </div>
                     <div class="file-upload-wrapper">
                         <input type="file" id="audio-input" accept="audio/*">
                         <label for="audio-input" class="file-upload-label">
                             <span>Choose Audio File</span>
                         </label>
+                    </div>
+                    <button id="add-music-btn"
+                        style="width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px; background: #fff; color: #000; font-weight: bold; border: none; cursor: pointer;">Add
+                        Track</button>
+                    <!-- Loading indicator -->
+                    <div id="loadingIndicator" style="display:none; text-align:center; padding: 10px; color: #28a745;">
+                        جاري الرفع... ثواني ⏳
                     </div>
                 </div>
 

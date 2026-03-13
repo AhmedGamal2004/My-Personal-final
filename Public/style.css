@@ -452,6 +452,36 @@ button#send-btn:hover {
     pointer-events: none;
 }
 
+.audio-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    z-index: 1;
+}
+
+.audio-cover {
+    width: 180px;
+    height: 180px;
+    border-radius: 16px;
+    object-fit: cover;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    background: #2c2c2c;
+}
+
+.audio-cover-placeholder {
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .audio-info {
     text-align: center;
     z-index: 1;
@@ -466,7 +496,7 @@ button#send-btn:hover {
 }
 
 .audio-artist {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: rgba(255, 255, 255, 0.6);
     display: block;
 }
