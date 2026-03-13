@@ -614,4 +614,66 @@ document.addEventListener('DOMContentLoaded', () => {
         const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
         return text.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer" class="post-link">$1</a>');
     }
+
+    // --- Keyboard Controls ---
+    let lastPlayedAudio = null;
+
+    window.addEventListener('keydown', (e) => {
+        // Don't trigger if typing in an input or textarea
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+            return;
+        }
+
+        const cards = Array.from(document.querySelectorAll('.audio-card'));
+        if (cards.length === 0) return;
+
+        // Space: Play/Pause
+        if (e.code === 'Space') {
+            e.preventDefault();
+            const activeAudio = document.querySelector('audio:not([paused])');
+            if (activeAudio) {
+                // Find play button of this audio and click it
+                activeAudio.closest('.audio-card').querySelector('.play-pause-btn').click();
+            } else if (lastPlayedAudio) {
+                lastPlayedAudio.closest('.audio-card').querySelector('.play-pause-btn').click();
+            } else {
+                // Play the first one
+                cards[0].querySelector('.play-pause-btn').click();
+            }
+        }
+
+        // Ctrl + Arrow keys
+        if (e.ctrlKey) {
+            let currentIndex = -1;
+            const activeAudio = document.querySelector('audio:not([paused])') || lastPlayedAudio;
+            
+            if (activeAudio) {
+                const activeCard = activeAudio.closest('.audio-card');
+                currentIndex = cards.indexOf(activeCard);
+            }
+
+            // Ctrl + Right: Next
+            if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                const nextIndex = (currentIndex + 1) % cards.length;
+                cards[nextIndex].querySelector('.play-pause-btn').click();
+                cards[nextIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Ctrl + Left: Previous
+            if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                const prevIndex = (currentIndex - 1 + cards.length) % cards.length;
+                cards[prevIndex].querySelector('.play-pause-btn').click();
+                cards[prevIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // Update lastPlayedAudio when any audio starts playing
+    document.addEventListener('play', (e) => {
+        if (e.target.tagName === 'AUDIO') {
+            lastPlayedAudio = e.target;
+        }
+    }, true);
 });
