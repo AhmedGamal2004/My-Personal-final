@@ -257,12 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function updateMessage(id, content, title, artist) {
+    async function updateMessage(id, content, title, artist, cover_image) {
         try {
             const data = { id };
             if (content !== undefined) data.content = content;
             if (title !== undefined) data.title = title;
             if (artist !== undefined) data.artist = artist;
+            if (cover_image !== undefined) data.cover_image = cover_image;
 
             const response = await fetch('/api/update-message', {
                 method: 'POST',
@@ -515,11 +516,25 @@ document.addEventListener('DOMContentLoaded', () => {
         editBtn.className = 'action-btn';
         editBtn.innerHTML = '✏️';
         editBtn.title = 'Edit Info';
-        editBtn.onclick = () => {
+        editBtn.onclick = async () => {
             const newTitle = prompt('Enter new song title:', title || '');
             const newArtist = prompt('Enter new artist name:', artist || '');
-            if (newTitle !== null || newArtist !== null) {
-                updateMessage(id, undefined, newTitle, newArtist);
+            
+            let newCover = undefined;
+            if (confirm('هل تريد تغيير صورة الغلاف (Artwork)؟')) {
+                const imgInput = document.createElement('input');
+                imgInput.type = 'file';
+                imgInput.accept = 'image/*';
+                imgInput.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const base64Img = await toBase64(file);
+                        await updateMessage(id, undefined, newTitle !== null ? newTitle : title, newArtist !== null ? newArtist : artist, base64Img);
+                    }
+                };
+                imgInput.click();
+            } else if (newTitle !== null || newArtist !== null) {
+                await updateMessage(id, undefined, newTitle, newArtist);
             }
         };
         actionsDiv.appendChild(editBtn);
