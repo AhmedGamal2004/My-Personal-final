@@ -133,9 +133,29 @@ app.get('/api/audio/:id', async (req, res) => {
         const base64String = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
         const buffer = Buffer.from(base64String, 'base64');
 
-        res.setHeader('Content-Type', 'audio/mpeg');
-        res.setHeader('Content-Length', buffer.length);
-        res.send(buffer);
+        const range = req.headers.range;
+        const totalSize = buffer.length;
+
+        if (range) {
+            const parts = range.replace(/bytes=/, "").split("-");
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : totalSize - 1;
+            const chunksize = (end - start) + 1;
+            
+            res.writeHead(206, {
+                "Content-Range": `bytes ${start}-${end}/${totalSize}`,
+                "Accept-Ranges": "bytes",
+                "Content-Length": chunksize,
+                "Content-Type": "audio/mpeg",
+            });
+            res.end(buffer.slice(start, end + 1));
+        } else {
+            res.writeHead(200, {
+                "Content-Length": totalSize,
+                "Content-Type": "audio/mpeg",
+            });
+            res.end(buffer);
+        }
     } catch (error) {
         res.status(500).send(error.message);
     }
