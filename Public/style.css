@@ -579,6 +579,50 @@ audio.hidden-player {
     display: none;
 }
 
+/* Lyrics */
+.lyrics-container {
+    max-height: 200px;
+    overflow-y: auto;
+    margin: 15px 0;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+}
+
+.lyrics-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.lyrics-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.lyrics-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 60px 0; /* Extra padding for scrolling center */
+}
+
+.lyric-line {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.lyric-line.active {
+    color: #fff;
+    font-weight: 700;
+    transform: scale(1.1);
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
 /* Clearfix for button float */
 .input-card::after {
     content: "";

@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messageInput = document.getElementById('message-input');
     const postsFeed = document.getElementById('posts-feed');
     const audioInput = document.getElementById('audio-input');
+    const lyricsInput = document.getElementById('lyrics-input');
     const artworkInput = document.getElementById('artwork-input');
     const artworkPreview = document.getElementById('artwork-preview');
     const artworkPreviewImg = document.getElementById('artwork-preview-img');
@@ -213,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 messages.forEach(msg => {
                     if (msg.type === 'audio') {
-                        displayAudio(msg.id, msg.content, msg.title, msg.artist, msg.created_at, msg.cover_image);
+                        displayAudio(msg.id, msg.content, msg.title, msg.artist, msg.created_at, msg.cover_image, msg.lyrics);
                     } else {
                         displayPost(msg.id, msg.content, msg.created_at);
                     }
@@ -257,13 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function updateMessage(id, content, title, artist, cover_image) {
+    async function updateMessage(id, content, title, artist, cover_image, lyrics) {
         try {
             const data = { id };
             if (content !== undefined) data.content = content;
             if (title !== undefined) data.title = title;
             if (artist !== undefined) data.artist = artist;
             if (cover_image !== undefined) data.cover_image = cover_image;
+            if (lyrics !== undefined) data.lyrics = lyrics;
 
             const response = await fetch('/api/update-message', {
                 method: 'POST',
@@ -418,6 +420,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (file) {
             const title = songNameInput.value.trim() || file.name.replace(/\.[^/.]+$/, "");
             const artist = artistNameInput.value.trim() || 'Unknown Artist';
+            const lyrics = lyricsInput.value.trim();
             const artworkFile = artworkInput.files[0];
             let artworkBase64 = '';
 
@@ -453,13 +456,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         type: 'audio',
                         title,
                         artist,
-                        cover_image: artworkBase64
+                        cover_image: artworkBase64,
+                        lyrics
                     })
                 });
 
                 if (response.ok) {
                     audioInput.value = '';
                     artworkInput.value = '';
+                    lyricsInput.value = '';
                     artworkPreview.style.display = 'none';
                     songNameInput.value = '';
                     artistNameInput.value = '';
@@ -479,13 +484,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function displayAudio(id, base64, title, artist, timestamp, coverImage) {
+    function displayAudio(id, base64, title, artist, timestamp, coverImage, lyrics) {
         const audioDiv = document.createElement('div');
         audioDiv.className = 'audio-card';
         const date = new Date(timestamp);
         const timeString = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         const coverHtml = coverImage ? `<img src="${coverImage}" class="audio-cover">` : '<div class="audio-cover-placeholder">♪</div>';
+        const parsedLyrics = parseLRC(lyrics || '');
 
         audioDiv.innerHTML = `
             <div class="card-actions" style="display: ${isAdminMode ? 'flex' : 'none'}"></div>
@@ -496,6 +502,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="audio-artist">${escapeHtml(artist || 'Unknown Artist')}</span>
                 </div>
             </div>
+            
+            <div class="lyrics-container" style="display: none;">
+                <div class="lyrics-content"></div>
+            </div>
+
             <div class="audio-controls-container">
                 <div class="audio-progress-bar">
                     <div class="audio-progress-fill"></div>
@@ -506,9 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="audio-main-controls">
-                <button class="ctrl-btn prev-btn">⏮</button>
-                <button class="ctrl-btn play-pause-btn">▶</button>
-                <button class="ctrl-btn next-btn">⏭</button>
+                <button class="ctrl-btn lyrics-toggle-btn" title="Lyrics" style="font-size: 0.9rem; opacity: 0.6;">🎙️</button>
+                <div style="display: flex; gap: 24px; align-items: center;">
+                    <button class="ctrl-btn prev-btn">⏮</button>
+                    <button class="ctrl-btn play-pause-btn">▶</button>
+                    <button class="ctrl-btn next-btn">⏭</button>
+                </div>
+                <div style="width: 24px;"></div> <!-- Spacer -->
             </div>
             <audio class="hidden-player" src="/api/audio/${id}"></audio>
         `;
@@ -524,7 +539,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const newTitle = prompt('Enter new song title:', title || '');
             const newArtist = prompt('Enter new artist name:', artist || '');
             
-            let newCover = undefined;
+            let newLyrics = undefined;
+            if (confirm('هل تريد تعديل الكلمات (Lyrics)؟')) {
+                newLyrics = prompt('Paste new LRC Lyrics:', lyrics || '');
+            }
+
             if (confirm('هل تريد تغيير صورة الغلاف (Artwork)؟')) {
                 const imgInput = document.createElement('input');
                 imgInput.type = 'file';
@@ -533,12 +552,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const file = e.target.files[0];
                     if (file) {
                         const base64Img = await toBase64(file);
-                        await updateMessage(id, undefined, newTitle !== null ? newTitle : title, newArtist !== null ? newArtist : artist, base64Img);
+                        await updateMessage(id, undefined, newTitle !== null ? newTitle : title, newArtist !== null ? newArtist : artist, base64Img, newLyrics);
                     }
                 };
                 imgInput.click();
-            } else if (newTitle !== null || newArtist !== null) {
-                await updateMessage(id, undefined, newTitle, newArtist);
+            } else if (newTitle !== null || newArtist !== null || newLyrics !== undefined) {
+                await updateMessage(id, undefined, newTitle, newArtist, undefined, newLyrics);
             }
         };
         actionsDiv.appendChild(editBtn);
@@ -550,6 +569,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const progressFill = audioDiv.querySelector('.audio-progress-fill');
         const currentTimeEl = audioDiv.querySelector('.current-time');
         const durationEl = audioDiv.querySelector('.total-duration');
+
+        const lyricsToggleBtn = audioDiv.querySelector('.lyrics-toggle-btn');
+        const lyricsContainer = audioDiv.querySelector('.lyrics-container');
+        const lyricsContent = audioDiv.querySelector('.lyrics-content');
+
+        // Populate lyrics
+        if (parsedLyrics.length > 0) {
+            parsedLyrics.forEach((line, index) => {
+                const lineEl = document.createElement('p');
+                lineEl.className = 'lyric-line';
+                lineEl.dataset.time = line.time;
+                lineEl.textContent = line.text;
+                lyricsContent.appendChild(lineEl);
+            });
+        } else {
+            lyricsContent.innerHTML = '<p style="text-align: center; opacity: 0.5;">No lyrics available</p>';
+        }
+
+        lyricsToggleBtn.onclick = () => {
+            const isVisible = lyricsContainer.style.display !== 'none';
+            lyricsContainer.style.display = isVisible ? 'none' : 'block';
+            lyricsToggleBtn.style.opacity = isVisible ? '0.6' : '1';
+        };
 
         playPauseBtn.onclick = () => {
             if (audio.paused) {
@@ -573,6 +615,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const percent = (audio.currentTime / audio.duration) * 100;
             progressFill.style.width = percent + '%';
             currentTimeEl.textContent = formatTime(audio.currentTime);
+
+            // Sync lyrics
+            if (parsedLyrics.length > 0) {
+                const currentT = audio.currentTime;
+                let activeIndex = -1;
+                for (let i = 0; i < parsedLyrics.length; i++) {
+                    if (currentT >= parsedLyrics[i].time) {
+                        activeIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (activeIndex !== -1) {
+                    const lines = lyricsContent.querySelectorAll('.lyric-line');
+                    lines.forEach((l, idx) => {
+                        if (idx === activeIndex) {
+                            l.classList.add('active');
+                            // Scroll to center
+                            l.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                        } else {
+                            l.classList.remove('active');
+                        }
+                    });
+                }
+            }
         };
 
         audio.onloadedmetadata = () => {
@@ -622,6 +690,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function parseLRC(lrcText) {
+        if (!lrcText) return [];
+        const lines = lrcText.split('\n');
+        const result = [];
+        const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+
+        lines.forEach(line => {
+            const match = timeRegex.exec(line);
+            if (match) {
+                const mins = parseInt(match[1]);
+                const secs = parseInt(match[2]);
+                const ms = parseInt(match[3]);
+                const time = mins * 60 + secs + (ms / (match[3].length === 3 ? 1000 : 100));
+                const text = line.replace(timeRegex, '').trim();
+                if (text) {
+                    result.push({ time, text });
+                }
+            }
+        });
+        return result.sort((a, b) => a.time - b.time);
     }
 
     function toBase64(file) {
