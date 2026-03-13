@@ -275,9 +275,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 fetchMessages();
+            } else {
+                const err = await response.json();
+                alert('فشل التعديل: ' + (err.error || 'خطأ غير معروف'));
             }
         } catch (error) {
             console.error('Error updating message:', error);
+            alert('حصلت مشكلة في الاتصال بالخادم.');
         }
     }
 

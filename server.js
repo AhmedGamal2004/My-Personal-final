@@ -145,19 +145,19 @@ app.post('/api/update-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured" });
         const { id, content, title, artist, cover_image } = req.body;
-        
-        let query = sql`UPDATE messages SET `;
-        const updates = [];
-        if (content !== undefined) updates.push(sql`content = ${content}`);
-        if (title !== undefined) updates.push(sql`title = ${title}`);
-        if (artist !== undefined) updates.push(sql`artist = ${artist}`);
-        if (cover_image !== undefined) updates.push(sql`cover_image = ${cover_image}`);
-        
-        if (updates.length === 0) return res.json({ success: true });
+        if (!id) return res.status(400).json({ error: "ID is required" });
 
-        await sql`UPDATE messages SET ${updates.reduce((acc, curr, i) => i === 0 ? curr : sql`${acc}, ${curr}`)} WHERE id = ${id}`;
+        // Ensure the table has the cover_image column
+        try { await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS cover_image TEXT DEFAULT ''`; } catch(e){}
+
+        if (content !== undefined) await sql`UPDATE messages SET content = ${content} WHERE id = ${id}`;
+        if (title !== undefined) await sql`UPDATE messages SET title = ${title} WHERE id = ${id}`;
+        if (artist !== undefined) await sql`UPDATE messages SET artist = ${artist} WHERE id = ${id}`;
+        if (cover_image !== undefined) await sql`UPDATE messages SET cover_image = ${cover_image} WHERE id = ${id}`;
+
         res.json({ success: true });
     } catch (error) {
+        console.error("Update error:", error);
         res.status(500).json({ error: error.message });
     }
 });
