@@ -614,6 +614,14 @@ audio.hidden-player {
     color: rgba(255, 255, 255, 0.4);
     transition: all 0.3s ease;
     text-align: center;
+    cursor: pointer;
+    padding: 4px 0;
+    border-radius: 4px;
+}
+
+.lyric-line:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .lyric-line.active {
@@ -621,6 +629,7 @@ audio.hidden-player {
     font-weight: 700;
     transform: scale(1.1);
     text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    background: transparent;
 }
 
 /* Clearfix for button float */

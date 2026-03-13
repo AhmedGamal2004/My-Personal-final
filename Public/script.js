@@ -581,6 +581,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 lineEl.className = 'lyric-line';
                 lineEl.dataset.time = line.time;
                 lineEl.textContent = line.text;
+                
+                // Add click to seek
+                lineEl.onclick = () => {
+                    audio.currentTime = line.time;
+                    if (audio.paused) {
+                        playPauseBtn.click();
+                    }
+                };
+                
                 lyricsContent.appendChild(lineEl);
             });
         } else {
