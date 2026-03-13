@@ -586,6 +586,34 @@ document.addEventListener('DOMContentLoaded', () => {
             audio.currentTime = pos * audio.duration;
         };
 
+        const prevBtn = audioDiv.querySelector('.prev-btn');
+        const nextBtn = audioDiv.querySelector('.next-btn');
+
+        const playBrother = (direction) => {
+            const cards = Array.from(document.querySelectorAll('.audio-card'));
+            const currentIndex = cards.indexOf(audioDiv);
+            if (currentIndex === -1) return;
+
+            let targetIndex;
+            if (direction === 'next') {
+                targetIndex = (currentIndex + 1) % cards.length;
+            } else {
+                targetIndex = (currentIndex - 1 + cards.length) % cards.length;
+            }
+
+            const targetCard = cards[targetIndex];
+            if (targetCard) {
+                targetCard.querySelector('.play-pause-btn').click();
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        nextBtn.onclick = () => playBrother('next');
+        prevBtn.onclick = () => playBrother('prev');
+
+        // Auto-play next track when finished
+        audio.onended = () => playBrother('next');
+
         audioFeed.appendChild(audioDiv);
     }
 
