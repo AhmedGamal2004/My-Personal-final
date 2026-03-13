@@ -581,7 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         progressBar.onclick = (e) => {
             const rect = progressBar.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
+            // Since site is RTL, the bar starts from the right.
+            const pos = (rect.right - e.clientX) / rect.width;
             audio.currentTime = pos * audio.duration;
         };
 
