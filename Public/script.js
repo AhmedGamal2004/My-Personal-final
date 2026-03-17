@@ -261,11 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateMessage(id, content, title, artist, cover_image, lyrics) {
         try {
             const data = { id };
-            if (content !== undefined) data.content = content;
-            if (title !== undefined) data.title = title;
-            if (artist !== undefined) data.artist = artist;
-            if (cover_image !== undefined) data.cover_image = cover_image;
-            if (lyrics !== undefined) data.lyrics = lyrics;
+            if (content !== undefined && content !== null) data.content = content;
+            if (title !== undefined && title !== null) data.title = title;
+            if (artist !== undefined && artist !== null) data.artist = artist;
+            if (cover_image !== undefined && cover_image !== null) data.cover_image = cover_image;
+            if (lyrics !== undefined && lyrics !== null) data.lyrics = lyrics;
 
             const response = await fetch('/api/update-message', {
                 method: 'POST',
@@ -542,8 +542,23 @@ document.addEventListener('DOMContentLoaded', () => {
             
             let newLyrics = undefined;
             if (confirm('هل تريد تعديل الكلمات (Lyrics)؟')) {
-                newLyrics = prompt('Paste new LRC Lyrics:', lyrics || '');
+                const lyricsPrompt = prompt('Paste new LRC Lyrics:', lyrics || '');
+                if (lyricsPrompt !== null) {
+                    newLyrics = lyricsPrompt;
+                }
             }
+
+            // Function to perform the actual update with whatever we have
+            const doUpdate = async (imgBase64 = undefined) => {
+                await updateMessage(
+                    id, 
+                    undefined, 
+                    newTitle !== null ? newTitle : undefined, 
+                    newArtist !== null ? newArtist : undefined, 
+                    imgBase64, 
+                    newLyrics
+                );
+            };
 
             if (confirm('هل تريد تغيير صورة الغلاف (Artwork)؟')) {
                 const imgInput = document.createElement('input');
@@ -553,12 +568,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const file = e.target.files[0];
                     if (file) {
                         const base64Img = await toBase64(file);
-                        await updateMessage(id, undefined, newTitle !== null ? newTitle : title, newArtist !== null ? newArtist : artist, base64Img, newLyrics);
+                        await doUpdate(base64Img);
+                    } else {
+                        // User opened picker but didn't pick anything
+                        await doUpdate();
                     }
                 };
                 imgInput.click();
-            } else if (newTitle !== null || newArtist !== null || newLyrics !== undefined) {
-                await updateMessage(id, undefined, newTitle, newArtist, undefined, newLyrics);
+            } else {
+                // Not changing artwork, just save the other changes
+                await doUpdate();
             }
         };
         actionsDiv.appendChild(editBtn);
