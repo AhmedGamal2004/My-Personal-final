@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="ctrl-btn play-pause-btn">▶</button>
                     <button class="ctrl-btn next-btn">⏭</button>
                 </div>
-                <button class="ctrl-btn download-btn" title="Download" style="font-size: 0.9rem; opacity: 0.6;">📥</button>
+                <button class="ctrl-btn download-btn" title="Download" style="font-size: 0.9rem; opacity: 0.6; display: ${isAdminMode ? 'flex' : 'none'};">📥</button>
             </div>
             <audio class="hidden-player" src="/api/audio/${id}"></audio>
         `;
