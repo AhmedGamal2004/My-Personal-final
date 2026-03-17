@@ -500,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="audio-info">
                     <span class="audio-title">${escapeHtml(title || 'Untitled')}</span>
                     <span class="audio-artist">${escapeHtml(artist || 'Unknown Artist')}</span>
+                    <span class="audio-date">${timeString}</span>
                 </div>
             </div>
             
@@ -523,7 +524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="ctrl-btn play-pause-btn">▶</button>
                     <button class="ctrl-btn next-btn">⏭</button>
                 </div>
-                <div style="width: 24px;"></div> <!-- Spacer -->
+                <button class="ctrl-btn download-btn" title="Download" style="font-size: 0.9rem; opacity: 0.6;">📥</button>
             </div>
             <audio class="hidden-player" src="/api/audio/${id}"></audio>
         `;
@@ -573,6 +574,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const lyricsToggleBtn = audioDiv.querySelector('.lyrics-toggle-btn');
         const lyricsContainer = audioDiv.querySelector('.lyrics-container');
         const lyricsContent = audioDiv.querySelector('.lyrics-content');
+        const downloadBtn = audioDiv.querySelector('.download-btn');
+
+        downloadBtn.onclick = () => {
+            const link = document.createElement('a');
+            link.href = `/api/audio/${id}`;
+            link.download = `${title || 'track'}.mp3`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
 
         // Populate lyrics
         if (parsedLyrics.length > 0) {
