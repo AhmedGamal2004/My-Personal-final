@@ -140,6 +140,7 @@ body {
     outline: none;
     /* When editing */
     border-bottom: 1px solid transparent;
+    white-space: pre-wrap; /* Preserve newlines */
 }
 
 .bio:focus {
@@ -506,6 +507,15 @@ button#send-btn:hover {
     color: rgba(255, 255, 255, 0.4);
     display: block;
     margin-top: 4px;
+}
+
+.audio-description {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 8px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    text-align: center;
 }
 
 .audio-controls-container {

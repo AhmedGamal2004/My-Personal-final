@@ -102,8 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/get-profile');
             const data = await response.json();
-            if (data.name) nameEl.textContent = data.name;
-            if (data.bio) bioEl.textContent = data.bio;
+            if (data.name) nameEl.innerText = data.name;
+            if (data.bio) bioEl.innerText = data.bio;
             if (data.cover) coverDisplay.style.backgroundImage = `url('${data.cover}')`;
             if (data.avatar) {
                 avatarImg.src = data.avatar;
@@ -136,8 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
     [nameEl, bioEl].forEach(el => {
         el.addEventListener('blur', () => {
             updateProfile({
-                name: nameEl.textContent.trim(),
-                bio: bioEl.textContent.trim()
+                name: nameEl.innerText.trim(),
+                bio: bioEl.innerText.trim()
             });
         });
     });
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 messages.forEach(msg => {
                     if (msg.type === 'audio') {
-                        displayAudio(msg.id, msg.content, msg.title, msg.artist, msg.created_at, msg.cover_image, msg.lyrics);
+                        displayAudio(msg.id, msg.content, msg.title, msg.artist, msg.created_at, msg.cover_image, msg.lyrics, msg.description);
                     } else {
                         displayPost(msg.id, msg.content, msg.created_at);
                     }
@@ -251,14 +251,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'x-admin-password': adminPassword
                 },
-                body: JSON.stringify({ content, type, title, artist })
+                body: JSON.stringify({ content, type, title, artist, description: '' })
             });
         } catch (error) {
             console.error('Error saving message:', error);
         }
     }
 
-    async function updateMessage(id, content, title, artist, cover_image, lyrics) {
+    async function updateMessage(id, content, title, artist, cover_image, lyrics, description) {
         try {
             const data = { id };
             if (content !== undefined && content !== null) data.content = content;
@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (artist !== undefined && artist !== null) data.artist = artist;
             if (cover_image !== undefined && cover_image !== null) data.cover_image = cover_image;
             if (lyrics !== undefined && lyrics !== null) data.lyrics = lyrics;
+            if (description !== undefined && description !== null) data.description = description;
 
             const response = await fetch('/api/update-message', {
                 method: 'POST',
@@ -410,6 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addMusicBtn.addEventListener('click', async () => {
         const file = audioInput.files[0];
+        const descriptionInput = document.getElementById('description-input');
 
         if (!file) {
             alert('أرجوك ارفع ملف صوتي الأول.');
@@ -421,6 +423,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const title = songNameInput.value.trim() || file.name.replace(/\.[^/.]+$/, "");
             const artist = artistNameInput.value.trim() || 'Unknown Artist';
             const lyrics = lyricsInput.value.trim();
+            const description = descriptionInput ? descriptionInput.value.trim() : '';
             const artworkFile = artworkInput.files[0];
             let artworkBase64 = '';
 
@@ -457,7 +460,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         title,
                         artist,
                         cover_image: artworkBase64,
-                        lyrics
+                        lyrics,
+                        description
                     })
                 });
 
@@ -468,6 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     artworkPreview.style.display = 'none';
                     songNameInput.value = '';
                     artistNameInput.value = '';
+                    if (descriptionInput) descriptionInput.value = '';
                     fetchMessages(true);
                 } else {
                     const err = await response.json();
@@ -484,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function displayAudio(id, base64, title, artist, timestamp, coverImage, lyrics) {
+    function displayAudio(id, base64, title, artist, timestamp, coverImage, lyrics, description) {
         const audioDiv = document.createElement('div');
         audioDiv.className = 'audio-card';
         const date = new Date(timestamp);
@@ -503,6 +508,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class="audio-date">${timeString}</span>
                 </div>
             </div>
+
+            <div class="audio-description" style="display: ${description ? 'block' : 'none'}">${linkify(escapeHtml(description || ''))}</div>
             
             <div class="lyrics-container" style="display: none;">
                 <div class="lyrics-content"></div>
@@ -556,9 +563,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     newTitle !== null ? newTitle : undefined, 
                     newArtist !== null ? newArtist : undefined, 
                     imgBase64, 
-                    newLyrics
+                    newLyrics,
+                    descriptionPrompt !== null ? descriptionPrompt : undefined
                 );
             };
+
+            const descriptionPrompt = prompt('تعديل الوصف:', description || '');
 
             if (confirm('هل تريد تغيير صورة الغلاف (Artwork)؟')) {
                 const imgInput = document.createElement('input');

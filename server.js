@@ -97,10 +97,11 @@ app.get('/api/get-messages', async (req, res) => {
         try { 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS cover_image TEXT DEFAULT ''`; 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS lyrics TEXT DEFAULT ''`;
+            await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''`;
         } catch(e){}
 
         const messages = await sql`
-            SELECT id, type, title, artist, created_at, cover_image, lyrics,
+            SELECT id, type, title, artist, created_at, cover_image, lyrics, description,
                    CASE WHEN type = 'audio' THEN 'REFER_TO_BINARY_ROUTE' ELSE content END as content
             FROM messages ORDER BY created_at ASC
         `;
@@ -113,15 +114,16 @@ app.get('/api/get-messages', async (req, res) => {
 app.post('/api/create-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured" });
-        const { content, type = 'text', title, artist, cover_image = '', lyrics = '' } = req.body;
+        const { content, type = 'text', title, artist, cover_image = '', lyrics = '', description = '' } = req.body;
         
         try { 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS cover_image TEXT DEFAULT ''`; 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS lyrics TEXT DEFAULT ''`;
+            await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''`;
         } catch(e){}
 
-        await sql`INSERT INTO messages (content, type, title, artist, cover_image, lyrics) 
-                  VALUES (${content}, ${type}, ${title || ''}, ${artist || ''}, ${cover_image}, ${lyrics})`;
+        await sql`INSERT INTO messages (content, type, title, artist, cover_image, lyrics, description) 
+                  VALUES (${content}, ${type}, ${title || ''}, ${artist || ''}, ${cover_image}, ${lyrics}, ${description})`;
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -170,13 +172,14 @@ app.get('/api/audio/:id', async (req, res) => {
 app.post('/api/update-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured" });
-        const { id, content, title, artist, cover_image, lyrics } = req.body;
+        const { id, content, title, artist, cover_image, lyrics, description } = req.body;
         if (!id) return res.status(400).json({ error: "ID is required" });
 
         // Ensure the table has the columns
         try { 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS cover_image TEXT DEFAULT ''`; 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS lyrics TEXT DEFAULT ''`;
+            await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''`;
         } catch(e){}
 
         if (content !== undefined) await sql`UPDATE messages SET content = ${content} WHERE id = ${id}`;
@@ -184,6 +187,7 @@ app.post('/api/update-message', isAdmin, async (req, res) => {
         if (artist !== undefined) await sql`UPDATE messages SET artist = ${artist} WHERE id = ${id}`;
         if (cover_image !== undefined) await sql`UPDATE messages SET cover_image = ${cover_image} WHERE id = ${id}`;
         if (lyrics !== undefined) await sql`UPDATE messages SET lyrics = ${lyrics} WHERE id = ${id}`;
+        if (description !== undefined) await sql`UPDATE messages SET description = ${description} WHERE id = ${id}`;
 
         res.json({ success: true });
     } catch (error) {
