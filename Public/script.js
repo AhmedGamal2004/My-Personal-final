@@ -237,7 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     messageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
             e.preventDefault();
             sendBtn.click();
         }
@@ -376,7 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Handle Keyboard shortcuts
             textP.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                const isMobile = window.matchMedia('(max-width: 768px)').matches;
+                if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
                     e.preventDefault();
                     handleSave();
                 }
