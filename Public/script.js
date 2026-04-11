@@ -33,6 +33,46 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAdminStatus();
     fetchProfile();
     fetchMessages();
+    restoreDrafts();
+
+    function restoreDrafts() {
+        const messageDraft = localStorage.getItem('messageDraft');
+        if (messageDraft) {
+            messageInput.value = messageDraft;
+        }
+
+        const audioDraft = JSON.parse(localStorage.getItem('audioDraft') || '{}');
+        if (audioDraft.title) songNameInput.value = audioDraft.title;
+        if (audioDraft.artist) artistNameInput.value = audioDraft.artist;
+        if (audioDraft.lyrics) lyricsInput.value = audioDraft.lyrics;
+        if (audioDraft.description) {
+            const descriptionInput = document.getElementById('description-input');
+            if (descriptionInput) descriptionInput.value = audioDraft.description;
+        }
+    }
+
+    function saveAudioDraft() {
+        const descriptionInput = document.getElementById('description-input');
+        const draft = {
+            title: songNameInput.value,
+            artist: artistNameInput.value,
+            lyrics: lyricsInput.value,
+            description: descriptionInput ? descriptionInput.value : ''
+        };
+        localStorage.setItem('audioDraft', JSON.stringify(draft));
+    }
+
+    messageInput.addEventListener('input', () => {
+        localStorage.setItem('messageDraft', messageInput.value);
+    });
+
+    [songNameInput, artistNameInput, lyricsInput].forEach(el => {
+        el.addEventListener('input', saveAudioDraft);
+    });
+    // Description input might be dynamic or just there
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'description-input') saveAudioDraft();
+    });
 
     async function checkAdminStatus() {
         if (!adminPassword) {
@@ -250,9 +290,27 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.addEventListener('click', async () => {
         const text = messageInput.value.trim();
         if (!text) return;
-        messageInput.value = '';
-        await saveMessage(text, 'text');
-        fetchMessages(true); // fetchMessages now scrolls to bottom
+
+        // Disable button while sending
+        sendBtn.disabled = true;
+        sendBtn.innerText = 'Posting...';
+
+        try {
+            const success = await saveMessage(text, 'text');
+            // ONLY clear if the save returned something that indicates success
+            // Note: saveMessage currently doesn't return anything. Let's fix that.
+            
+            // Re-fetching success status from saveMessage update below
+            messageInput.value = '';
+            localStorage.removeItem('messageDraft');
+            fetchMessages(true); 
+        } catch (error) {
+            console.error('Failed to post:', error);
+            alert('❌ فشل الحفظ: ' + error.message + '\n\nكلامك لسه موجود في المربع، جرب تدوس تاني أو خده Copy.');
+        } finally {
+            sendBtn.disabled = false;
+            sendBtn.innerText = 'Post';
+        }
     });
 
     messageInput.addEventListener('keydown', (e) => {
@@ -273,8 +331,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ content, type, title, artist, description: '' })
             });
+            
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Server error');
+            }
+            return true;
         } catch (error) {
             console.error('Error saving message:', error);
+            throw error; // Rethrow to be caught in event listener
         }
     }
 
@@ -494,6 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     songNameInput.value = '';
                     artistNameInput.value = '';
                     if (descriptionInput) descriptionInput.value = '';
+                    
+                    localStorage.removeItem('audioDraft'); // Clear draft on success
                     fetchMessages(true);
                 } else {
                     const err = await response.json();
