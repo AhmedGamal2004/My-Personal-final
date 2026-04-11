@@ -613,13 +613,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div class="audio-main-controls">
-                <button class="ctrl-btn lyrics-toggle-btn" title="Lyrics" style="font-size: 0.9rem; opacity: 0.6;">🎙️</button>
-                <div style="display: flex; gap: 24px; align-items: center;">
+                <button class="ctrl-btn lyrics-toggle-btn" title="Lyrics" style="font-size: 0.9rem;">🎙️</button>
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <button class="ctrl-btn loop-btn" title="Repeat One" style="font-size: 1rem;">🔁</button>
                     <button class="ctrl-btn prev-btn">⏮</button>
                     <button class="ctrl-btn play-pause-btn">▶</button>
                     <button class="ctrl-btn next-btn">⏭</button>
+                    <button class="ctrl-btn auto-next-btn" title="Auto-Play Next" style="font-size: 1.1rem;">➡️</button>
                 </div>
-                <button class="ctrl-btn download-btn" title="Download" style="font-size: 0.9rem; opacity: 0.6; display: ${isAdminMode ? 'flex' : 'none'};">📥</button>
+                <button class="ctrl-btn download-btn" title="Download" style="font-size: 0.9rem; display: ${isAdminMode ? 'flex' : 'none'};">📥</button>
             </div>
             <audio class="hidden-player" src="/api/audio/${id}"></audio>
         `;
@@ -813,11 +815,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        const loopBtn = audioDiv.querySelector('.loop-btn');
+        const autoNextBtn = audioDiv.querySelector('.auto-next-btn');
+
+        loopBtn.onclick = () => {
+            loopBtn.classList.toggle('active');
+            if (loopBtn.classList.contains('active')) {
+                autoNextBtn.classList.remove('active');
+            }
+        };
+
+        autoNextBtn.onclick = () => {
+            autoNextBtn.classList.toggle('active');
+            if (autoNextBtn.classList.contains('active')) {
+                loopBtn.classList.remove('active');
+            }
+        };
+
         nextBtn.onclick = () => playBrother('next');
         prevBtn.onclick = () => playBrother('prev');
 
-        // Auto-play next track when finished
-        audio.onended = () => playBrother('next');
+        // Logic for ending track
+        audio.onended = () => {
+            if (loopBtn.classList.contains('active')) {
+                audio.currentTime = 0;
+                audio.play();
+            } else if (autoNextBtn.classList.contains('active')) {
+                playBrother('next');
+            } else {
+                playPauseBtn.innerHTML = '▶';
+            }
+        };
 
         audioFeed.appendChild(audioDiv);
     }
