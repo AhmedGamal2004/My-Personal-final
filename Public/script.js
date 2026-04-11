@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const bioEl = document.querySelector('.bio');
     const sendBtn = document.getElementById('send-btn');
     const messageInput = document.getElementById('message-input');
+    const adminTrigger = document.getElementById('admin-trigger');
     const postsFeed = document.getElementById('posts-feed');
     const audioInput = document.getElementById('audio-input');
     const lyricsInput = document.getElementById('lyrics-input');
@@ -21,10 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const songNameInput = document.getElementById('song-name-input');
     const artistNameInput = document.getElementById('artist-name-input');
     const audioFeed = document.getElementById('audio-feed');
-    const footerLink = document.querySelector('footer p');
 
     let adminPassword = localStorage.getItem('adminPassword') || null;
     let isAdminMode = false;
+    let adminClickCount = 0;
+    let adminClickTimer = null;
 
     // --- Persistence Logic ---
 
@@ -76,25 +78,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    footerLink.style.cursor = 'pointer';
-    footerLink.addEventListener('click', async () => {
-        const pass = prompt('Enter Admin Password:');
-        if (!pass) return;
-
-        const response = await fetch('/api/verify-admin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password: pass })
-        });
-
-        if (response.ok) {
-            adminPassword = pass;
-            localStorage.setItem('adminPassword', pass);
-            checkAdminStatus();
-            alert('Admin Mode Enabled!');
-            fetchMessages(); // Refresh to show edit buttons
+    adminTrigger.addEventListener('click', async () => {
+        if (isAdminMode) {
+            adminPassword = null;
+            isAdminMode = false;
+            localStorage.removeItem('adminPassword');
+            setAdminUI(false);
+            alert('Admin Mode Disabled!');
+            fetchMessages();
         } else {
-            alert('Invalid Password');
+            adminClickCount++;
+            if (adminClickTimer) clearTimeout(adminClickTimer);
+            adminClickTimer = setTimeout(() => {
+                adminClickCount = 0;
+            }, 2000);
+
+            if (adminClickCount >= 5) {
+                adminClickCount = 0;
+                const pass = prompt('Enter Admin Password:');
+                if (!pass) return;
+
+                const response = await fetch('/api/verify-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pass })
+                });
+
+                if (response.ok) {
+                    adminPassword = pass;
+                    localStorage.setItem('adminPassword', pass);
+                    checkAdminStatus();
+                    alert('Admin Mode Enabled!');
+                    fetchMessages();
+                } else {
+                    alert('Invalid Password');
+                }
+            }
         }
     });
 

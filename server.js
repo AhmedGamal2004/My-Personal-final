@@ -23,7 +23,7 @@ try {
     console.error("CRITICAL: Failed to initialize database connection:", error.message);
 }
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ahmed123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'غبي غباء';
 
 const isAdmin = (req, res, next) => {
     const providedPassword = req.headers['x-admin-password'];
