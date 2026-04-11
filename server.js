@@ -23,10 +23,16 @@ try {
     console.error("CRITICAL: Failed to initialize database connection:", error.message);
 }
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'غبي غباء';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '3AZZEZY ANA';
 
 const isAdmin = (req, res, next) => {
-    const providedPassword = req.headers['x-admin-password'];
+    let providedPassword = req.headers['x-admin-password'];
+    try {
+        if (providedPassword) providedPassword = decodeURIComponent(providedPassword);
+    } catch (e) {
+        // Fallback if decoding fails
+    }
+    
     if (providedPassword === ADMIN_PASSWORD) {
         next();
     } else {

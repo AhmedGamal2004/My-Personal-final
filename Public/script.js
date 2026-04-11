@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-password': adminPassword
+                    'x-admin-password': encodeURIComponent(adminPassword)
                 },
                 body: JSON.stringify(fields)
             });
@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-password': adminPassword
+                    'x-admin-password': encodeURIComponent(adminPassword)
                 },
                 body: JSON.stringify({ content, type, title, artist, description: '' })
             });
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-password': adminPassword
+                    'x-admin-password': encodeURIComponent(adminPassword)
                 },
                 body: JSON.stringify(data)
             });
@@ -380,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-admin-password': adminPassword
+                    'x-admin-password': encodeURIComponent(adminPassword)
                 },
                 body: JSON.stringify({ id })
             });
@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-admin-password': adminPassword
+                        'x-admin-password': encodeURIComponent(adminPassword)
                     },
                     body: JSON.stringify({
                         content: audioBase64,
