@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { neon } from '@neondatabase/serverless';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { v2 as cloudinary } from 'cloudinary';
 dotenv.config();
 
 const app = express();
@@ -22,6 +23,13 @@ try {
 } catch (error) {
     console.error("CRITICAL: Failed to initialize database connection:", error.message);
 }
+
+// Cloudinary configuration
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '3AZZEZY ANA';
 
@@ -78,7 +86,24 @@ app.get('/api/get-profile', async (req, res) => {
 app.post('/api/update-profile', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured" });
-        const { name, bio, avatar, cover } = req.body;
+        let { name, bio, avatar, cover } = req.body;
+
+        // Upload avatar to Cloudinary if it's a base64 string
+        if (avatar && avatar.startsWith('data:image')) {
+            const uploadRes = await cloudinary.uploader.upload(avatar, {
+                folder: 'profile',
+            });
+            avatar = uploadRes.secure_url;
+        }
+
+        // Upload cover to Cloudinary if it's a base64 string
+        if (cover && cover.startsWith('data:image')) {
+            const uploadRes = await cloudinary.uploader.upload(cover, {
+                folder: 'profile',
+            });
+            cover = uploadRes.secure_url;
+        }
+
         await sql`INSERT INTO settings (id, name, bio) VALUES (1, 'Ahmed Gamal', 'Welcome') ON CONFLICT (id) DO NOTHING`;
         await sql`
             UPDATE settings SET 
@@ -88,7 +113,7 @@ app.post('/api/update-profile', isAdmin, async (req, res) => {
                 cover = COALESCE(${cover === undefined ? null : cover}, cover)
             WHERE id = 1
         `;
-        res.json({ success: true });
+        res.json({ success: true, avatar, cover });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -120,17 +145,32 @@ app.get('/api/get-messages', async (req, res) => {
 app.post('/api/create-message', isAdmin, async (req, res) => {
     try {
         if (!sql) return res.status(500).json({ error: "Database not configured" });
-        const { content, type = 'text', title, artist, cover_image = '', lyrics = '', description = '' } = req.body;
+        let { content, type = 'text', title, artist, cover_image = '', lyrics = '', description = '' } = req.body;
         
+        // Migration: Ensure columns exist
         try { 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS cover_image TEXT DEFAULT ''`; 
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS lyrics TEXT DEFAULT ''`;
             await sql`ALTER TABLE messages ADD COLUMN IF NOT EXISTS description TEXT DEFAULT ''`;
         } catch(e){}
 
+        // Upload to Cloudinary if it's audio or a large image/content
+        if (type === 'audio' && content.startsWith('data:audio')) {
+            const uploadRes = await cloudinary.uploader.upload(content, {
+                resource_type: 'video', // Cloudinary handles audio as video resource type
+                folder: 'audio',
+            });
+            content = uploadRes.secure_url;
+        } else if (cover_image && cover_image.startsWith('data:image')) {
+            const uploadRes = await cloudinary.uploader.upload(cover_image, {
+                folder: 'covers',
+            });
+            cover_image = uploadRes.secure_url;
+        }
+
         await sql`INSERT INTO messages (content, type, title, artist, cover_image, lyrics, description) 
                   VALUES (${content}, ${type}, ${title || ''}, ${artist || ''}, ${cover_image}, ${lyrics}, ${description})`;
-        res.json({ success: true });
+        res.json({ success: true, content });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -144,6 +184,12 @@ app.get('/api/audio/:id', async (req, res) => {
         if (row.length === 0) return res.status(404).send("Not found");
 
         const base64Data = row[0].content;
+        
+        // If it's already a URL, redirect to it
+        if (base64Data.startsWith('http')) {
+            return res.redirect(base64Data);
+        }
+
         const base64String = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
         const buffer = Buffer.from(base64String, 'base64');
 
